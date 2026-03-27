@@ -97,7 +97,7 @@
     fetch('data.json').then(r => r.json()).then(data => {
         rawData = data;
         render();
-    });
+    }).catch(err => alert("无法加载 data.json，请检查文件是否存在于 index.html 同级目录。"));
 
     // 2. 渲染 UI
     function render() {
@@ -107,12 +107,10 @@
         container.innerHTML = '';
 
         if (viewMode === 'pdf') {
-            // PDF模式：搜索所有题目关联的PDF
             let allItems = [...rawData.p1, ...rawData.p2, ...rawData.p3];
             let filtered = allItems.filter(i => i.title.toLowerCase().includes(search));
             filtered.forEach(item => container.appendChild(createCard(item, true)));
         } else {
-            // 普通机考模式
             let filtered = rawData[viewMode].filter(i => i.title.toLowerCase().includes(search));
             filtered.forEach(item => container.appendChild(createCard(item, false)));
         }
@@ -126,7 +124,7 @@
         if (isPdfMode) {
             div.innerHTML = `
                 <span class="item-title">${item.title}</span>
-                <button class="btn-sm btn-pdf" style="width:100%" onclick="smartOpenPDF('${item.id}', '${item.title}')">📕 打开解析 PDF</button>
+                <button class="btn-sm btn-pdf" style="width:100%" onclick="smartOpenPDF('${item.id}', '${item.title}')">📕 查看 PDF 解析</button>
             `;
         } else {
             div.innerHTML = `
@@ -148,24 +146,25 @@
         render();
     }
 
-    // 3. 智能 PDF 路径适配（适配大写 P 及 高频/非高频子目录）
+    // 3. 智能路径适配：支持大写 P 路径及多级目录
     function smartOpenPDF(id, title) {
-        // 查找所属 Part
         let partFolder = "P1";
         if (rawData.p1.find(i => i.id === id)) partFolder = "P1";
         else if (rawData.p2.find(i => i.id === id)) partFolder = "P2";
         else if (rawData.p3.find(i => i.id === id)) partFolder = "P3";
 
-        // 由于前端无法判断哪个文件夹有文件，我们默认先尝试“高频”路径
-        // 如果你的文件都在高频，这个路径就是对的。
-        const url = `pdf/${partFolder}/高频/${title}.pdf`;
-        window.open(url, '_blank');
+        // 核心：直接尝试打开。如果你的 PDF 是按题目命名的，
+        // 建议优先点击这个尝试。如果 404，请确认你的 PDF 就在“高频”或“非高频”文件夹内。
+        const pathHigh = `pdf/${partFolder}/高频/${title}.pdf`;
         
-        // 如果文件在非高频，你需要手动改一下下面这行或者挪动文件到高频文件夹
-        console.log("正在尝试路径: " + url);
+        // 提示：GitHub Pages 不支持前端检测文件是否存在。
+        // 我们默认尝试“高频”路径。
+        window.open(pathHigh, '_blank');
+        
+        console.log("正在尝试访问 PDF: " + pathHigh);
     }
 
-    // 4. 考试逻辑
+    // 4. 机考核心逻辑
     function startFullMock() {
         const session = [];
         ['p1', 'p2', 'p3'].forEach(p => {
@@ -205,7 +204,6 @@
             const f = document.createElement('iframe');
             f.src = item.url;
             f.className = idx === 0 ? 'active' : '';
-            f.onload = () => { try { f.contentWindow.confirm = () => true; f.contentWindow.alert = () => true; } catch(e) {} };
             wrap.appendChild(f);
         });
 
@@ -228,11 +226,12 @@
     function autoSubmit() {
         document.querySelectorAll('iframe').forEach(f => {
             try {
+                // 自动寻找并点击各个题库常见的提交/Finish 按钮
                 const btn = f.contentWindow.document.querySelector('#finish, .check-button, button[id*="finish"]');
                 if(btn) btn.click();
             } catch(e) {}
         });
-        alert("考试时间到！已为您自动交卷。");
+        alert("时间到！系统已尝试为您自动交卷。");
     }
 
     function quitExam() {
