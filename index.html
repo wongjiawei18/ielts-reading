@@ -6,43 +6,32 @@
     <style>
         :root { --primary: #2563eb; --pdf-red: #e11d48; --success: #22c55e; --dark: #1e293b; --bg: #f8fafc; }
         body { font-family: 'Segoe UI', Tahoma, sans-serif; margin: 0; background: var(--bg); height: 100vh; display: flex; overflow: hidden; }
-
-        /* --- 侧边栏 --- */
         #sidebar { width: 320px; background: #fff; border-right: 1px solid #e2e8f0; display: flex; flex-direction: column; }
         .sidebar-header { padding: 25px 20px 10px; }
         .search-box { width: 100%; padding: 12px; border: 2px solid #f1f5f9; border-radius: 10px; outline: none; transition: 0.3s; font-size: 14px; background: #f8fafc; box-sizing: border-box;}
         .search-box:focus { border-color: var(--primary); background: #fff; box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.1); }
-        
         .nav-tabs { display: flex; background: #f1f5f9; padding: 4px; margin: 15px 20px; border-radius: 10px; }
         .nav-tab { flex: 1; border: none; padding: 8px; background: transparent; cursor: pointer; border-radius: 7px; font-size: 13px; color: #64748b; font-weight: 600; transition: 0.2s; }
         .nav-tab.active { background: #fff; color: var(--primary); box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
         .nav-tab.pdf-tab.active { color: var(--pdf-red); }
-
         .list-container { flex: 1; overflow-y: auto; padding: 0 20px 20px; }
         .item-card { background: #fff; padding: 15px; border-radius: 12px; border: 1px solid #eef2f6; margin-bottom: 12px; transition: 0.2s; position: relative; cursor: pointer; }
         .item-card:hover { border-color: var(--primary); transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
         .item-card.is-done { border-left: 4px solid var(--success); }
-        
         .item-title { font-size: 14px; font-weight: 600; color: var(--dark); line-height: 1.4; margin-bottom: 10px; display: block; }
         .btn-row { display: flex; gap: 8px; }
         .btn-sm { flex: 1; border: none; padding: 6px; border-radius: 6px; font-size: 11px; font-weight: bold; cursor: pointer; }
         .btn-run { background: #eff6ff; color: var(--primary); }
         .btn-pdf { background: #fff1f2; color: var(--pdf-red); }
         .done-badge { position: absolute; top: 10px; right: 10px; background: var(--success); color: white; font-size: 10px; padding: 1px 6px; border-radius: 10px; }
-
-        /* --- 主显示区 --- */
         #main-view { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; background: radial-gradient(#e2e8f0 1px, transparent 1px); background-size: 20px 20px; }
         .btn-mock { background: var(--dark); color: white; border: none; padding: 20px 50px; border-radius: 15px; font-size: 20px; font-weight: bold; cursor: pointer; box-shadow: 0 10px 20px rgba(0,0,0,0.1); transition: 0.3s; }
-        .btn-mock:hover { background: #000; transform: scale(1.05); }
-
-        /* --- 模考层 --- */
         #exam-overlay { position: fixed; inset: 0; background: #fff; z-index: 9999; display: none; flex-direction: column; }
         .exam-nav { background: #111827; color: white; height: 55px; display: flex; align-items: center; justify-content: space-between; padding: 0 20px; }
         .timer { font-family: monospace; font-size: 26px; color: #fbbf24; font-weight: bold; }
         .passage-tabs { display: flex; gap: 10px; }
         .p-btn { background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); color: white; padding: 6px 16px; border-radius: 5px; cursor: pointer; }
         .p-btn.active { background: var(--primary); border-color: var(--primary); }
-
         #iframe-wrap { flex: 1; position: relative; background: #eee; }
         iframe { width: 100%; height: 100%; border: none; position: absolute; display: none; }
         iframe.active { display: block; }
@@ -55,19 +44,13 @@
         <div style="font-size: 22px; font-weight: 800; color: var(--dark); margin-bottom: 15px;">IELTS Reading</div>
         <input type="text" id="searchInput" class="search-box" placeholder="输入题目名查找..." oninput="render()">
     </div>
-
     <div class="nav-tabs">
         <button class="nav-tab active" onclick="switchMode('p1', this)">P1</button>
         <button class="nav-tab" onclick="switchMode('p2', this)">P2</button>
         <button class="nav-tab" onclick="switchMode('p3', this)">P3</button>
         <button class="nav-tab pdf-tab" onclick="switchMode('pdf', this)">PDF库</button>
     </div>
-
     <div class="list-container" id="listBody"></div>
-    
-    <div style="padding: 15px; text-align: center; border-top:1px solid #f1f5f9;">
-        <button onclick="clearHistory()" style="border:none; background:none; color:#cbd5e1; font-size:11px; cursor:pointer;">清空练习记录</button>
-    </div>
 </div>
 
 <div id="main-view">
@@ -97,46 +80,50 @@
     fetch('data.json').then(r => r.json()).then(data => {
         rawData = data;
         render();
-    }).catch(err => alert("无法加载 data.json，请检查文件是否存在于 index.html 同级目录。"));
+    });
 
-    // 2. 渲染 UI
+    // 2. 核心：PDF 路径暴力匹配
+    // 你的 PDF 路径很乱，我们只能在打开时提示用户或者引导至对应的子文件夹
+    function smartOpenPDF(id, title) {
+        let part = "P1";
+        if (rawData.p1.find(i => i.id === id)) part = "P1";
+        else if (rawData.p2.find(i => i.id === id)) part = "P2";
+        else if (rawData.p3.find(i => i.id === id)) part = "P3";
+
+        // 由于 PDF 文件夹名字带有数字前缀（如 1. P1高频），且 PDF 文件名包含中文
+        // 浏览器端无法自动检索文件名，最稳妥的办法是直接引导到对应的子文件夹查看
+        // 但这里我们尝试拼一个最常见的路径规律
+        const folderPrefix = (part === "P1") ? "1. P1高频" : (part === "P2" ? "1. P2高频" : "1. P3高频");
+        const alertMsg = `请在打开的窗口中，进入 pdf/${part} 目录下查找：\n\n【${title}】的解析。`;
+        
+        // 尝试跳转到对应的 Part 文件夹浏览
+        const browseUrl = `pdf/${part}/`; 
+        
+        if(confirm(alertMsg + "\n\n点击确定前往文件夹列表手动选择。")) {
+            window.open(browseUrl, '_blank');
+        }
+    }
+
+    // 3. 渲染 UI
     function render() {
         if (!rawData) return;
         const container = document.getElementById('listBody');
         const search = document.getElementById('searchInput').value.toLowerCase();
         container.innerHTML = '';
-
-        if (viewMode === 'pdf') {
-            let allItems = [...rawData.p1, ...rawData.p2, ...rawData.p3];
-            let filtered = allItems.filter(i => i.title.toLowerCase().includes(search));
-            filtered.forEach(item => container.appendChild(createCard(item, true)));
-        } else {
-            let filtered = rawData[viewMode].filter(i => i.title.toLowerCase().includes(search));
-            filtered.forEach(item => container.appendChild(createCard(item, false)));
-        }
-    }
-
-    function createCard(item, isPdfMode) {
-        const count = history[item.id] || 0;
-        const div = document.createElement('div');
-        div.className = `item-card ${count > 0 ? 'is-done' : ''}`;
-        
-        if (isPdfMode) {
+        const items = (viewMode === 'pdf') ? [...rawData.p1, ...rawData.p2, ...rawData.p3] : rawData[viewMode];
+        items.filter(i => i.title.toLowerCase().includes(search)).forEach(item => {
+            const count = history[item.id] || 0;
+            const div = document.createElement('div');
+            div.className = `item-card ${count > 0 ? 'is-done' : ''}`;
             div.innerHTML = `
                 <span class="item-title">${item.title}</span>
-                <button class="btn-sm btn-pdf" style="width:100%" onclick="smartOpenPDF('${item.id}', '${item.title}')">📕 查看 PDF 解析</button>
-            `;
-        } else {
-            div.innerHTML = `
-                ${count > 0 ? `<span class="done-badge">已练 ${count} 次</span>` : ''}
-                <span class="item-title" onclick="singlePlay('${item.id}')">${item.title}</span>
                 <div class="btn-row">
                     <button class="btn-sm btn-run" onclick="singlePlay('${item.id}')">💻 开始机考</button>
-                    <button class="btn-sm btn-pdf" onclick="smartOpenPDF('${item.id}', '${item.title}')">解析</button>
+                    <button class="btn-sm btn-pdf" onclick="smartOpenPDF('${item.id}', '${item.title}')">📕 解析</button>
                 </div>
             `;
-        }
-        return div;
+            container.appendChild(div);
+        });
     }
 
     function switchMode(m, btn) {
@@ -144,36 +131,6 @@
         document.querySelectorAll('.nav-tab').forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
         render();
-    }
-
-    // 3. 智能路径适配：支持大写 P 路径及多级目录
-    function smartOpenPDF(id, title) {
-        let partFolder = "P1";
-        if (rawData.p1.find(i => i.id === id)) partFolder = "P1";
-        else if (rawData.p2.find(i => i.id === id)) partFolder = "P2";
-        else if (rawData.p3.find(i => i.id === id)) partFolder = "P3";
-
-        // 核心：直接尝试打开。如果你的 PDF 是按题目命名的，
-        // 建议优先点击这个尝试。如果 404，请确认你的 PDF 就在“高频”或“非高频”文件夹内。
-        const pathHigh = `pdf/${partFolder}/高频/${title}.pdf`;
-        
-        // 提示：GitHub Pages 不支持前端检测文件是否存在。
-        // 我们默认尝试“高频”路径。
-        window.open(pathHigh, '_blank');
-        
-        console.log("正在尝试访问 PDF: " + pathHigh);
-    }
-
-    // 4. 机考核心逻辑
-    function startFullMock() {
-        const session = [];
-        ['p1', 'p2', 'p3'].forEach(p => {
-            const pool = rawData[p];
-            const unread = pool.filter(i => !history[i.id]);
-            const finalPool = unread.length > 0 ? unread : pool;
-            session.push(finalPool[Math.floor(Math.random() * finalPool.length)]);
-        });
-        launch(session, true);
     }
 
     function singlePlay(id) {
@@ -185,11 +142,20 @@
         launch([target], false);
     }
 
+    function startFullMock() {
+        const session = [];
+        ['p1', 'p2', 'p3'].forEach(p => {
+            const pool = rawData[p];
+            const finalPool = pool.filter(i => !history[i.id]).length ? pool.filter(i => !history[i.id]) : pool;
+            session.push(finalPool[Math.floor(Math.random() * finalPool.length)]);
+        });
+        launch(session, true);
+    }
+
     function launch(items, timed) {
         const tabs = document.getElementById('examTabs');
         const wrap = document.getElementById('iframe-wrap');
         tabs.innerHTML = ''; wrap.innerHTML = '';
-
         items.forEach((item, idx) => {
             history[item.id] = (history[item.id] || 0) + 1;
             const b = document.createElement('button');
@@ -200,13 +166,11 @@
                 document.querySelectorAll('iframe').forEach((f, i) => f.classList.toggle('active', i === idx));
             };
             tabs.appendChild(b);
-
             const f = document.createElement('iframe');
-            f.src = item.url;
+            f.src = item.url; // 关键：data.json 里的 url 必须是 "P1/文件名.html"
             f.className = idx === 0 ? 'active' : '';
             wrap.appendChild(f);
         });
-
         localStorage.setItem('reading_stats_vfinal', JSON.stringify(history));
         document.getElementById('exam-overlay').style.display = 'flex';
         if(timed) startClock(3600); else document.getElementById('timer').innerText = "Unlimited";
@@ -219,36 +183,11 @@
             let m = Math.floor(left/60).toString().padStart(2,'0');
             let s = (left%60).toString().padStart(2,'0');
             document.getElementById('timer').innerText = `${m}:${s}`;
-            if(left <= 0) { clearInterval(clock); autoSubmit(); }
+            if(left <= 0) { clearInterval(clock); document.getElementById('exam-overlay').style.display = 'none'; }
         }, 1000);
     }
 
-    function autoSubmit() {
-        document.querySelectorAll('iframe').forEach(f => {
-            try {
-                // 自动寻找并点击各个题库常见的提交/Finish 按钮
-                const btn = f.contentWindow.document.querySelector('#finish, .check-button, button[id*="finish"]');
-                if(btn) btn.click();
-            } catch(e) {}
-        });
-        alert("时间到！系统已尝试为您自动交卷。");
-    }
-
-    function quitExam() {
-        if(confirm("确定退出当前考试？")) {
-            clearInterval(clock);
-            document.getElementById('exam-overlay').style.display = 'none';
-            render();
-        }
-    }
-
-    function clearHistory() {
-        if(confirm("确定清空所有做题记录？")) {
-            history = {};
-            localStorage.removeItem('reading_stats_vfinal');
-            render();
-        }
-    }
+    function quitExam() { if(confirm("确定退出？")) { clearInterval(clock); document.getElementById('exam-overlay').style.display = 'none'; render(); } }
 </script>
 </body>
 </html>
