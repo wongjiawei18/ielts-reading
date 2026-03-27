@@ -7,51 +7,54 @@
         :root { --primary: #2563eb; --accent: #f59e0b; --pdf-red: #e11d48; --success: #22c55e; --dark: #1e293b; --bg: #f8fafc; }
         body { font-family: 'Segoe UI', system-ui, sans-serif; margin: 0; background: var(--bg); height: 100vh; display: flex; overflow: hidden; }
         
-        /* 侧边栏：核心统计与导航 */
+        /* 侧边栏 */
         #sidebar { width: 340px; background: #fff; border-right: 1px solid #e2e8f0; display: flex; flex-direction: column; box-shadow: 4px 0 15px rgba(0,0,0,0.02); }
         .sidebar-header { padding: 20px; }
         
-        /* 累计练习大看板 */
-        .stat-card { background: var(--primary); color: white; padding: 20px; border-radius: 15px; margin-bottom: 20px; box-shadow: 0 10px 20px rgba(37, 99, 235, 0.2); }
-        .stat-label { font-size: 14px; opacity: 0.9; font-weight: 500; }
-        .stat-value { font-size: 48px; font-weight: 800; line-height: 1.2; }
+        .stat-card { background: var(--primary); color: white; padding: 20px; border-radius: 15px; margin-bottom: 15px; }
+        .stat-label { font-size: 13px; opacity: 0.9; }
+        .stat-value { font-size: 36px; font-weight: 800; }
 
-        /* 模拟考大按钮 */
-        .btn-mock-main { background: var(--accent); color: white; border: none; width: 100%; padding: 16px; border-radius: 12px; font-size: 18px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px; transition: 0.3s; margin-bottom: 20px; }
-        .btn-mock-main:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(245, 158, 11, 0.3); }
+        /* 上次考题记录区 */
+        .last-session { background: #f1f5f9; margin: 0 20px 15px; padding: 12px; border-radius: 10px; display: none; }
+        .last-session-title { font-size: 12px; font-weight: bold; color: #64748b; margin-bottom: 8px; border-bottom: 1px solid #e2e8f0; padding-bottom: 4px; }
+        .last-item { font-size: 11px; color: var(--primary); cursor: pointer; display: block; margin-bottom: 4px; text-decoration: underline; }
 
-        /* 进度列表 */
+        .btn-mock-main { background: var(--accent); color: white; border: none; width: 100%; padding: 16px; border-radius: 12px; font-size: 18px; font-weight: bold; cursor: pointer; margin-bottom: 15px; }
+
         .progress-section { padding: 0 20px; flex: 1; overflow-y: auto; }
-        .progress-item { margin-bottom: 15px; color: #64748b; font-size: 14px; }
-        .progress-bar-bg { background: #f1f5f9; height: 8px; border-radius: 4px; margin-top: 5px; overflow: hidden; }
+        .progress-item { margin-bottom: 12px; color: #64748b; font-size: 13px; }
+        .progress-bar-bg { background: #e2e8f0; height: 6px; border-radius: 3px; margin-top: 4px; overflow: hidden; }
         .progress-bar-fill { background: var(--primary); height: 100%; transition: 0.5s; }
 
-        /* 清空记录 */
-        .footer-actions { padding: 15px; text-align: center; border-top: 1px solid #f1f5f9; }
-        .btn-clear { background: none; border: none; color: #cbd5e1; cursor: pointer; font-size: 13px; text-decoration: underline; }
-        .btn-clear:hover { color: #ef4444; }
+        .footer-actions { padding: 10px; text-align: center; }
+        .btn-clear { background: none; border: none; color: #cbd5e1; cursor: pointer; font-size: 12px; }
 
-        /* 右侧内容区 */
-        #content-area { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
-        .content-header { padding: 20px; background: #fff; border-bottom: 1px solid #e2e8f0; display: flex; align-items: center; gap: 15px; }
-        .search-box { flex: 1; padding: 10px 15px; border: 1px solid #e2e8f0; border-radius: 8px; outline: none; }
+        /* 内容区 */
+        #content-area { flex: 1; display: flex; flex-direction: column; }
+        .content-header { padding: 15px 20px; background: #fff; border-bottom: 1px solid #e2e8f0; display: flex; align-items: center; gap: 15px; }
+        .nav-tab { border: none; background: none; padding: 8px 15px; cursor: pointer; font-weight: 600; color: #64748b; }
+        .nav-tab.active { color: var(--primary); border-bottom: 2px solid var(--primary); }
+        .search-box { flex: 1; padding: 8px 15px; border: 1px solid #e2e8f0; border-radius: 20px; outline: none; }
         
-        .list-container { flex: 1; overflow-y: auto; padding: 20px; display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 15px; align-content: start; }
-        .item-card { background: #fff; padding: 16px; border-radius: 12px; border: 1px solid #eef2f6; transition: 0.2s; position: relative; }
-        .item-card.is-done { border-left: 5px solid var(--success); background: #f0fdf4; }
-        .item-title { font-size: 14px; font-weight: 600; color: var(--dark); margin-bottom: 8px; display: block; height: 40px; overflow: hidden; }
-        .item-count { font-size: 12px; color: #94a3b8; margin-bottom: 12px; display: flex; align-items: center; gap: 5px; }
+        .list-container { flex: 1; overflow-y: auto; padding: 20px; display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 15px; }
+        .item-card { background: #fff; padding: 15px; border-radius: 12px; border: 1px solid #eef2f6; transition: 0.2s; border-left: 4px solid #e2e8f0; }
+        .item-card.is-done { border-left-color: var(--success); background: #f0fdf4; }
+        .item-title { font-size: 14px; font-weight: 600; color: var(--dark); margin-bottom: 10px; display: block; min-height: 40px; }
+        .item-meta { font-size: 11px; color: #94a3b8; margin-bottom: 12px; font-weight: bold; }
         
         .btn-row { display: flex; gap: 8px; }
         .btn-sm { flex: 1; border: none; padding: 8px; border-radius: 6px; font-size: 12px; font-weight: bold; cursor: pointer; }
         .btn-run { background: #eff6ff; color: var(--primary); }
         .btn-pdf { background: #fff1f2; color: var(--pdf-red); }
 
-        /* 考试覆盖层 */
+        /* 考场界面 */
         #exam-overlay { position: fixed; inset: 0; background: #fff; z-index: 9999; display: none; flex-direction: column; }
-        .exam-nav { background: #111827; color: white; height: 55px; display: flex; align-items: center; justify-content: space-between; padding: 0 20px; }
+        .exam-nav { background: #111827; color: white; height: 50px; display: flex; align-items: center; justify-content: space-between; padding: 0 20px; }
         .timer { font-family: monospace; font-size: 24px; color: #fbbf24; }
-        iframe { width: 100%; height: 100%; border: none; display: none; }
+        .timer.time-up { color: #ef4444; animation: blink 1s infinite; }
+        @keyframes blink { 50% { opacity: 0; } }
+        iframe { width: 100%; height: calc(100% - 50px); border: none; display: none; }
         iframe.active { display: block; }
     </style>
 </head>
@@ -60,30 +63,32 @@
 <div id="sidebar">
     <div class="sidebar-header">
         <div class="stat-card">
-            <div class="stat-label">累计练习次数</div>
+            <div class="stat-label">累计完成练习</div>
             <div class="stat-value" id="totalCount">0</div>
         </div>
-        <button class="btn-mock-main" onclick="startFullMock()">
-            🎲 随机全套 (优先新题)
-        </button>
+        <button class="btn-mock-main" onclick="startFullMock()">🎲 随机抽取全套 (60min)</button>
     </div>
 
-    <div class="progress-section" id="progressList">
-        </div>
+    <div id="lastSessionBox" class="last-session">
+        <div class="last-session-title">上次模考文章 (点击查看)</div>
+        <div id="lastSessionList"></div>
+    </div>
+
+    <div class="progress-section" id="progressList"></div>
 
     <div class="footer-actions">
-        <button class="btn-clear" onclick="clearHistory()">清空记录</button>
+        <button class="btn-clear" onclick="clearHistory()">清空所有记录</button>
     </div>
 </div>
 
 <div id="content-area">
     <div class="content-header">
-        <div class="nav-tabs" style="display:flex; gap:10px;">
-            <button class="nav-tab active" onclick="switchMode('p1', this)">P1</button>
-            <button class="nav-tab" onclick="switchMode('p2', this)">P2</button>
-            <button class="nav-tab" onclick="switchMode('p3', this)">P3</button>
+        <div style="display:flex;">
+            <button class="nav-tab active" onclick="switchMode('p1', this)">Part 1</button>
+            <button class="nav-tab" onclick="switchMode('p2', this)">Part 2</button>
+            <button class="nav-tab" onclick="switchMode('p3', this)">Part 3</button>
         </div>
-        <input type="text" id="searchInput" class="search-box" placeholder="搜索文章标题..." oninput="render()">
+        <input type="text" id="searchInput" class="search-box" placeholder="搜索题目..." oninput="render()">
     </div>
     <div class="list-container" id="listBody"></div>
 </div>
@@ -92,23 +97,59 @@
     <div class="exam-nav">
         <div id="examTabs" style="display:flex; gap:10px;"></div>
         <div class="timer" id="timer">60:00</div>
-        <button onclick="quitExam()" style="background:#ef4444; border:none; color:white; padding:5px 12px; border-radius:5px; cursor:pointer;">退出</button>
+        <button onclick="quitExam()" style="background:#ef4444; border:none; color:white; padding:5px 15px; border-radius:5px; cursor:pointer; font-weight:bold;">退出考试</button>
     </div>
-    <div id="iframe-wrap" style="flex:1; position:relative;"></div>
+    <div id="iframe-wrap" style="flex:1;"></div>
 </div>
 
 <script>
     let rawData = null;
     let currentPart = 'p1';
-    let history = JSON.parse(localStorage.getItem('ielts_stats_v2') || '{}');
+    let history = JSON.parse(localStorage.getItem('ielts_reading_v3') || '{}');
+    let lastSession = JSON.parse(localStorage.getItem('last_session_v3') || '[]');
     let clock;
 
     // 1. 初始化
-    fetch('./data.json')
-        .then(r => r.json())
-        .then(data => { rawData = data; render(); updateSidebar(); });
+    fetch('./data.json').then(r => r.json()).then(data => { 
+        rawData = data; 
+        render(); 
+        updateUI(); 
+    });
 
-    // 2. 核心渲染
+    // 2. 更新 UI (进度条、统计、上次考题)
+    function updateUI() {
+        if(!rawData) return;
+        
+        // 更新总次数
+        const total = Object.keys(history).length;
+        document.getElementById('totalCount').innerText = total;
+
+        // 更新上次考试记录
+        const lastBox = document.getElementById('lastSessionBox');
+        const lastList = document.getElementById('lastSessionList');
+        if(lastSession.length > 0) {
+            lastBox.style.display = 'block';
+            lastList.innerHTML = lastSession.map(item => 
+                `<span class="last-item" onclick="openSingle('${item.id}')">${item.title}</span>`
+            ).join('');
+        }
+
+        // 更新进度条
+        const progressContainer = document.getElementById('progressList');
+        progressContainer.innerHTML = '';
+        ['p1', 'p2', 'p3'].forEach(p => {
+            const pool = rawData[p];
+            const done = pool.filter(i => history[i.id]).length;
+            const percent = Math.round((done / pool.length) * 100);
+            progressContainer.innerHTML += `
+                <div class="progress-item">
+                    <div style="display:flex; justify-content:space-between"><span>${p.toUpperCase()}</span><span>${done}/${pool.length}</span></div>
+                    <div class="progress-bar-bg"><div class="progress-bar-fill" style="width: ${percent}%"></div></div>
+                </div>`;
+        });
+    }
+
+    // 3. 渲染文章列表
     function render() {
         if(!rawData) return;
         const container = document.getElementById('listBody');
@@ -119,60 +160,37 @@
             const count = history[item.id] || 0;
             const card = document.createElement('div');
             card.className = `item-card ${count > 0 ? 'is-done' : ''}`;
-            
             card.innerHTML = `
                 <span class="item-title">${item.title}</span>
-                <div class="item-count">📋 已做过: ${count} 次</div>
+                <div class="item-meta">📊 练习次数: ${count}</div>
                 <div class="btn-row">
-                    <button class="btn-sm btn-run" onclick="launch([${JSON.stringify(item).replace(/"/g, '&quot;')}], false)">机考</button>
+                    <button class="btn-sm btn-run" onclick="openSingle('${item.id}')">开始练习</button>
                     <button class="btn-sm btn-pdf" onclick="window.open('pdf/')">解析</button>
-                </div>
-            `;
+                </div>`;
             container.appendChild(card);
         });
     }
 
-    // 3. 更新侧边栏统计 (包含进度条)
-    function updateSidebar() {
-        if(!rawData) return;
-        let total = 0;
-        const progressContainer = document.getElementById('progressList');
-        progressContainer.innerHTML = '';
-
-        ['p1', 'p2', 'p3'].forEach(p => {
-            const partData = rawData[p];
-            const doneCount = partData.filter(i => history[i.id]).length;
-            const percent = Math.round((doneCount / partData.length) * 100);
-            total += Object.values(history).length; // 这里改为所有练习总和
-
-            progressContainer.innerHTML += `
-                <div class="progress-item">
-                    <div style="display:flex; justify-content:space-between">
-                        <span>${p.toUpperCase()} 进度</span>
-                        <span>${doneCount} / ${partData.length}</span>
-                    </div>
-                    <div class="progress-bar-bg">
-                        <div class="progress-bar-fill" style="width: ${percent}%"></div>
-                    </div>
-                </div>
-            `;
-        });
-        
-        // 计算练习总次数
-        const totalExams = Object.values(history).reduce((a, b) => a + b, 0);
-        document.getElementById('totalCount').innerText = totalExams;
-    }
-
-    // 4. 随机抽取 (优先新题)
+    // 4. 考试逻辑
     function startFullMock() {
         const session = [];
         ['p1', 'p2', 'p3'].forEach(p => {
-            const pool = rawData[p];
-            const unread = pool.filter(i => !history[i.id]);
-            const source = unread.length > 0 ? unread : pool;
+            const unread = rawData[p].filter(i => !history[i.id]);
+            const source = unread.length > 0 ? unread : rawData[p];
             session.push(source[Math.floor(Math.random() * source.length)]);
         });
+        lastSession = session;
+        localStorage.setItem('last_session_v3', JSON.stringify(lastSession));
         launch(session, true);
+    }
+
+    function openSingle(id) {
+        let target;
+        ['p1','p2','p3'].forEach(p => {
+            const found = rawData[p].find(i => i.id === id);
+            if(found) target = found;
+        });
+        if(target) launch([target], false);
     }
 
     function launch(items, timed) {
@@ -181,61 +199,68 @@
         tabs.innerHTML = ''; wrap.innerHTML = '';
         
         items.forEach((item, idx) => {
-            history[item.id] = (history[item.id] || 0) + 1; // 记录次数
-            
+            history[item.id] = (history[item.id] || 0) + 1;
             const b = document.createElement('button');
-            b.style = "padding:5px 15px; cursor:pointer; background:#374151; color:white; border:none; border-radius:4px;";
-            b.innerText = `P${idx + 1}`;
+            b.className = `p-btn ${idx === 0 ? 'active' : ''}`;
+            b.innerText = `P${idx+1}`;
             b.onclick = () => {
+                document.querySelectorAll('.p-btn').forEach((btn, i) => btn.classList.toggle('active', i === idx));
                 document.querySelectorAll('iframe').forEach((f, i) => f.style.display = i === idx ? 'block' : 'none');
             };
             tabs.appendChild(b);
 
             const f = document.createElement('iframe');
             f.src = encodeURI(item.url.replace(/^p(\d)\//, 'P$1/'));
-            f.className = idx === 0 ? 'active' : '';
             f.style.display = idx === 0 ? 'block' : 'none';
             wrap.appendChild(f);
         });
 
-        localStorage.setItem('ielts_stats_v2', JSON.stringify(history));
+        localStorage.setItem('ielts_reading_v3', JSON.stringify(history));
         document.getElementById('exam-overlay').style.display = 'flex';
-        if(timed) startClock(3600);
-        updateSidebar();
-    }
-
-    function switchMode(m, btn) {
-        currentPart = m;
-        document.querySelectorAll('.nav-tab').forEach(b => b.style.color = '#64748b');
-        btn.style.color = 'var(--primary)';
-        render();
-    }
-
-    function clearHistory() {
-        if(confirm("确定清空所有练习记录吗？")) {
-            history = {};
-            localStorage.setItem('ielts_stats_v2', JSON.stringify(history));
-            location.reload();
-        }
+        document.getElementById('timer').classList.remove('time-up');
+        if(timed) startClock(3600); else document.getElementById('timer').innerText = "练习模式";
+        updateUI();
     }
 
     function startClock(sec) {
-        let left = sec;
-        clearInterval(clock);
+        let left = sec; clearInterval(clock);
         clock = setInterval(() => {
             left--;
             let m = Math.floor(left/60).toString().padStart(2,'0');
             let s = (left%60).toString().padStart(2,'0');
             document.getElementById('timer').innerText = `${m}:${s}`;
-            if(left <= 0) { clearInterval(clock); alert("时间到！"); quitExam(); }
+            
+            if(left <= 0) { 
+                clearInterval(clock); 
+                document.getElementById('timer').innerText = "00:00 - TIME UP";
+                document.getElementById('timer').classList.add('time-up');
+                alert("时间到！计时器已停止，你可以继续对答案或分析错题。点击‘退出考试’返回主页。");
+                // ✨ 关键修复：这里不再执行退出逻辑，只是停止计时。
+            }
         }, 1000);
     }
 
     function quitExam() {
-        clearInterval(clock);
-        document.getElementById('exam-overlay').style.display = 'none';
+        if(confirm("确定要退出吗？退出前请确保已完成答案分析。")) {
+            clearInterval(clock);
+            document.getElementById('exam-overlay').style.display = 'none';
+            render();
+            updateUI();
+        }
+    }
+
+    function switchMode(m, btn) {
+        currentPart = m;
+        document.querySelectorAll('.nav-tab').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
         render();
-        updateSidebar();
+    }
+
+    function clearHistory() {
+        if(confirm("确定清空吗？")) { 
+            localStorage.clear(); 
+            location.reload(); 
+        }
     }
 </script>
 </body>
