@@ -23,7 +23,6 @@
         .btn-sm { flex: 1; border: none; padding: 6px; border-radius: 6px; font-size: 11px; font-weight: bold; cursor: pointer; }
         .btn-run { background: #eff6ff; color: var(--primary); }
         .btn-pdf { background: #fff1f2; color: var(--pdf-red); }
-        .done-badge { position: absolute; top: 10px; right: 10px; background: var(--success); color: white; font-size: 10px; padding: 1px 6px; border-radius: 10px; }
         #main-view { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; background: radial-gradient(#e2e8f0 1px, transparent 1px); background-size: 20px 20px; }
         .btn-mock { background: var(--dark); color: white; border: none; padding: 20px 50px; border-radius: 15px; font-size: 20px; font-weight: bold; cursor: pointer; box-shadow: 0 10px 20px rgba(0,0,0,0.1); transition: 0.3s; }
         #exam-overlay { position: fixed; inset: 0; background: #fff; z-index: 9999; display: none; flex-direction: column; }
@@ -76,50 +75,50 @@
     let history = JSON.parse(localStorage.getItem('reading_stats_vfinal') || '{}');
     let clock;
 
-    // 1. 加载数据
-    fetch('data.json').then(r => r.json()).then(data => {
-        rawData = data;
-        render();
-    });
+    // 1. 初始化加载
+    fetch('./data.json')
+        .then(r => r.json())
+        .then(data => {
+            rawData = data;
+            render();
+        })
+        .catch(err => console.error("无法加载 data.json，请检查文件是否存在。", err));
 
-    // 2. 核心：PDF 路径暴力匹配
-    // 你的 PDF 路径很乱，我们只能在打开时提示用户或者引导至对应的子文件夹
+    // 2. PDF 查看提示（带路径纠偏）
     function smartOpenPDF(id, title) {
         let part = "P1";
         if (rawData.p1.find(i => i.id === id)) part = "P1";
         else if (rawData.p2.find(i => i.id === id)) part = "P2";
         else if (rawData.p3.find(i => i.id === id)) part = "P3";
 
-        // 由于 PDF 文件夹名字带有数字前缀（如 1. P1高频），且 PDF 文件名包含中文
-        // 浏览器端无法自动检索文件名，最稳妥的办法是直接引导到对应的子文件夹查看
-        // 但这里我们尝试拼一个最常见的路径规律
-        const folderPrefix = (part === "P1") ? "1. P1高频" : (part === "P2" ? "1. P2高频" : "1. P3高频");
-        const alertMsg = `请在打开的窗口中，进入 pdf/${part} 目录下查找：\n\n【${title}】的解析。`;
-        
-        // 尝试跳转到对应的 Part 文件夹浏览
-        const browseUrl = `pdf/${part}/`; 
-        
-        if(confirm(alertMsg + "\n\n点击确定前往文件夹列表手动选择。")) {
-            window.open(browseUrl, '_blank');
+        const alertMsg = `请在打开的窗口中，进入 pdf/${part} 目录下查找对应的解析文件。\n\n题目名：${title}`;
+        if(confirm(alertMsg)) {
+            window.open(`pdf/${part}/`, '_blank');
         }
     }
 
-    // 3. 渲染 UI
+    // 3. 列表渲染
     function render() {
         if (!rawData) return;
         const container = document.getElementById('listBody');
         const search = document.getElementById('searchInput').value.toLowerCase();
         container.innerHTML = '';
         const items = (viewMode === 'pdf') ? [...rawData.p1, ...rawData.p2, ...rawData.p3] : rawData[viewMode];
+        
         items.filter(i => i.title.toLowerCase().includes(search)).forEach(item => {
             const count = history[item.id] || 0;
             const div = document.createElement('div');
             div.className = `item-card ${count > 0 ? 'is-done' : ''}`;
+            
+            // 使用 encodeURIComponent 保护 ID 里的特殊符号
+            const safeId = encodeURIComponent(item.id).replace(/'/g, "%27");
+            const safeTitle = item.title.replace(/'/g, "&apos;");
+
             div.innerHTML = `
                 <span class="item-title">${item.title}</span>
                 <div class="btn-row">
-                    <button class="btn-sm btn-run" onclick="singlePlay('${item.id}')">💻 开始机考</button>
-                    <button class="btn-sm btn-pdf" onclick="smartOpenPDF('${item.id}', '${item.title}')">📕 解析</button>
+                    <button class="btn-sm btn-run" onclick="singlePlay('${safeId}')">💻 开始机考</button>
+                    <button class="btn-sm btn-pdf" onclick="smartOpenPDF('${safeId}', '${safeTitle}')">📕 查看解析</button>
                 </div>
             `;
             container.appendChild(div);
@@ -133,31 +132,37 @@
         render();
     }
 
-    function singlePlay(id) {
+    function singlePlay(encodedId) {
+        const id = decodeURIComponent(encodedId);
         let target;
         ['p1','p2','p3'].forEach(p => {
             const found = rawData[p].find(i => i.id === id);
             if(found) target = found;
         });
-        launch([target], false);
+        if(target) launch([target], false);
     }
 
     function startFullMock() {
         const session = [];
         ['p1', 'p2', 'p3'].forEach(p => {
             const pool = rawData[p];
-            const finalPool = pool.filter(i => !history[i.id]).length ? pool.filter(i => !history[i.id]) : pool;
-            session.push(finalPool[Math.floor(Math.random() * finalPool.length)]);
+            session.push(pool[Math.floor(Math.random() * pool.length)]);
         });
         launch(session, true);
     }
 
+    // 🚀 核心修复：处理 GitHub 上的 404
     function launch(items, timed) {
         const tabs = document.getElementById('examTabs');
         const wrap = document.getElementById('iframe-wrap');
-        tabs.innerHTML = ''; wrap.innerHTML = '';
+        tabs.innerHTML = ''; 
+        wrap.innerHTML = '';
+        
         items.forEach((item, idx) => {
+            // 记录历史
             history[item.id] = (history[item.id] || 0) + 1;
+            
+            // 1. 创建 Passage 切换按钮
             const b = document.createElement('button');
             b.className = `p-btn ${idx === 0 ? 'active' : ''}`;
             b.innerText = `Passage ${idx + 1}`;
@@ -166,28 +171,51 @@
                 document.querySelectorAll('iframe').forEach((f, i) => f.classList.toggle('active', i === idx));
             };
             tabs.appendChild(b);
+
+            // 2. 创建 iframe 加载 HTML
             const f = document.createElement('iframe');
-            f.src = item.url; // 关键：data.json 里的 url 必须是 "P1/文件名.html"
+            
+            // ✨ 关键修复：GitHub 上的文件夹是大写的 P1/P2/P3，而 JSON 里是小写
+            // 我们通过正则把开头的 p 替换成大写的 P
+            let correctedUrl = item.url.replace(/^p(\d)\//, 'P$1/');
+            
+            // ✨ 关键修复：使用 encodeURI 自动转义文件名中的空格和特殊字符
+            f.src = encodeURI(correctedUrl);
+            
             f.className = idx === 0 ? 'active' : '';
             wrap.appendChild(f);
         });
+
         localStorage.setItem('reading_stats_vfinal', JSON.stringify(history));
         document.getElementById('exam-overlay').style.display = 'flex';
-        if(timed) startClock(3600); else document.getElementById('timer').innerText = "Unlimited";
+        
+        if(timed) startClock(3600); 
+        else document.getElementById('timer').innerText = "Unlimited";
     }
 
     function startClock(sec) {
-        let left = sec; clearInterval(clock);
+        let left = sec; 
+        clearInterval(clock);
         clock = setInterval(() => {
             left--;
             let m = Math.floor(left/60).toString().padStart(2,'0');
             let s = (left%60).toString().padStart(2,'0');
             document.getElementById('timer').innerText = `${m}:${s}`;
-            if(left <= 0) { clearInterval(clock); document.getElementById('exam-overlay').style.display = 'none'; }
+            if(left <= 0) { 
+                clearInterval(clock); 
+                alert("考试时间到！");
+                quitExam();
+            }
         }, 1000);
     }
 
-    function quitExam() { if(confirm("确定退出？")) { clearInterval(clock); document.getElementById('exam-overlay').style.display = 'none'; render(); } }
+    function quitExam() { 
+        if(confirm("确定退出当前考试吗？")) { 
+            clearInterval(clock); 
+            document.getElementById('exam-overlay').style.display = 'none'; 
+            render(); 
+        } 
+    }
 </script>
 </body>
 </html>
