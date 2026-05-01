@@ -19,6 +19,8 @@
         .last-session { background: #f1f5f9; margin: 0 20px 15px; padding: 12px; border-radius: 10px; display: none; }
         .last-session-title { font-size: 12px; font-weight: bold; color: #64748b; margin-bottom: 8px; border-bottom: 1px solid #e2e8f0; padding-bottom: 4px; }
         .last-item { font-size: 11px; color: var(--primary); cursor: pointer; display: block; margin-bottom: 4px; text-decoration: underline; }
+        .btn-reopen { background: var(--primary); color: white; border: none; width: 100%; padding: 8px; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: bold; margin-bottom: 8px; transition: 0.2s; }
+        .btn-reopen:hover { background: #1d4ed8; }
 
         .btn-mock-main { background: var(--accent); color: white; border: none; width: 100%; padding: 16px; border-radius: 12px; font-size: 18px; font-weight: bold; cursor: pointer; margin-bottom: 15px; }
 
@@ -51,9 +53,17 @@
         /* 考场界面 */
         #exam-overlay { position: fixed; inset: 0; background: #fff; z-index: 9999; display: none; flex-direction: column; }
         .exam-nav { background: #111827; color: white; height: 50px; display: flex; align-items: center; justify-content: space-between; padding: 0 20px; }
+        .timer-wrap { display: flex; align-items: center; gap: 15px; }
         .timer { font-family: monospace; font-size: 24px; color: #fbbf24; }
         .timer.time-up { color: #ef4444; animation: blink 1s infinite; }
+        .btn-pause { background: #4b5563; color: white; border: none; padding: 5px 12px; border-radius: 5px; cursor: pointer; font-weight: bold; font-size: 13px; display: none; }
+        .btn-pause.paused { background: var(--accent); }
         @keyframes blink { 50% { opacity: 0; } }
+        
+        /* 标签页按钮样式补充 */
+        .p-btn { background: #374151; color: #9ca3af; border: none; padding: 5px 15px; border-radius: 5px; cursor: pointer; font-weight: bold; }
+        .p-btn.active { background: var(--primary); color: white; }
+        
         iframe { width: 100%; height: calc(100% - 50px); border: none; display: none; }
         iframe.active { display: block; }
     </style>
@@ -70,7 +80,7 @@
     </div>
 
     <div id="lastSessionBox" class="last-session">
-        <div class="last-session-title">上次模考文章 (点击查看)</div>
+        <div class="last-session-title">上次模考记录</div>
         <div id="lastSessionList"></div>
     </div>
 
@@ -96,7 +106,10 @@
 <div id="exam-overlay">
     <div class="exam-nav">
         <div id="examTabs" style="display:flex; gap:10px;"></div>
-        <div class="timer" id="timer">60:00</div>
+        <div class="timer-wrap">
+            <button id="pauseBtn" class="btn-pause" onclick="togglePause()">⏸ 暂停</button>
+            <div class="timer" id="timer">60:00</div>
+        </div>
         <button onclick="quitExam()" style="background:#ef4444; border:none; color:white; padding:5px 15px; border-radius:5px; cursor:pointer; font-weight:bold;">退出考试</button>
     </div>
     <div id="iframe-wrap" style="flex:1;"></div>
@@ -107,14 +120,18 @@
     let currentPart = 'p1';
     let history = JSON.parse(localStorage.getItem('ielts_reading_v3') || '{}');
     let lastSession = JSON.parse(localStorage.getItem('last_session_v3') || '[]');
+    
+    // 计时器相关变量
     let clock;
+    let timeLeft = 0;
+    let isPaused = false;
 
     // 1. 初始化
     fetch('./data.json').then(r => r.json()).then(data => { 
         rawData = data; 
         render(); 
         updateUI(); 
-    });
+    }).catch(err => console.error("加载 data.json 失败，请检查文件环境", err));
 
     // 2. 更新 UI (进度条、统计、上次考题)
     function updateUI() {
@@ -127,20 +144,27 @@
         // 更新上次考试记录
         const lastBox = document.getElementById('lastSessionBox');
         const lastList = document.getElementById('lastSessionList');
-        if(lastSession.length > 0) {
+        if(lastSession && lastSession.length > 0) {
             lastBox.style.display = 'block';
-            lastList.innerHTML = lastSession.map(item => 
-                `<span class="last-item" onclick="openSingle('${item.id}')">${item.title}</span>`
+            
+            // 构建一键打开按钮 + 单篇列表
+            let htmlStr = `<button class="btn-reopen" onclick="reopenLastSession()">📂 一键打开完整套题 (3篇)</button>`;
+            htmlStr += `<div style="margin-top: 10px;">`;
+            htmlStr += lastSession.map(item => 
+                `<span class="last-item" onclick="openSingle('${item.id}')">- ${item.title}</span>`
             ).join('');
+            htmlStr += `</div>`;
+            lastList.innerHTML = htmlStr;
         }
 
         // 更新进度条
         const progressContainer = document.getElementById('progressList');
         progressContainer.innerHTML = '';
         ['p1', 'p2', 'p3'].forEach(p => {
+            if(!rawData[p]) return;
             const pool = rawData[p];
             const done = pool.filter(i => history[i.id]).length;
-            const percent = Math.round((done / pool.length) * 100);
+            const percent = pool.length > 0 ? Math.round((done / pool.length) * 100) : 0;
             progressContainer.innerHTML += `
                 <div class="progress-item">
                     <div style="display:flex; justify-content:space-between"><span>${p.toUpperCase()}</span><span>${done}/${pool.length}</span></div>
@@ -151,7 +175,7 @@
 
     // 3. 渲染文章列表
     function render() {
-        if(!rawData) return;
+        if(!rawData || !rawData[currentPart]) return;
         const container = document.getElementById('listBody');
         const search = document.getElementById('searchInput').value.toLowerCase();
         container.innerHTML = '';
@@ -175,6 +199,7 @@
     function startFullMock() {
         const session = [];
         ['p1', 'p2', 'p3'].forEach(p => {
+            if(!rawData[p]) return;
             const unread = rawData[p].filter(i => !history[i.id]);
             const source = unread.length > 0 ? unread : rawData[p];
             session.push(source[Math.floor(Math.random() * source.length)]);
@@ -184,9 +209,17 @@
         launch(session, true);
     }
 
+    // 一键还原上次模考
+    function reopenLastSession() {
+        if(lastSession && lastSession.length > 0) {
+            launch(lastSession, true);
+        }
+    }
+
     function openSingle(id) {
         let target;
         ['p1','p2','p3'].forEach(p => {
+            if(!rawData[p]) return;
             const found = rawData[p].find(i => i.id === id);
             if(found) target = found;
         });
@@ -199,7 +232,10 @@
         tabs.innerHTML = ''; wrap.innerHTML = '';
         
         items.forEach((item, idx) => {
+            // 记录练习次数
             history[item.id] = (history[item.id] || 0) + 1;
+            
+            // 渲染标签页
             const b = document.createElement('button');
             b.className = `p-btn ${idx === 0 ? 'active' : ''}`;
             b.innerText = `P${idx+1}`;
@@ -209,6 +245,7 @@
             };
             tabs.appendChild(b);
 
+            // 渲染iframe
             const f = document.createElement('iframe');
             f.src = encodeURI(item.url.replace(/^p(\d)\//, 'P$1/'));
             f.style.display = idx === 0 ? 'block' : 'none';
@@ -218,26 +255,65 @@
         localStorage.setItem('ielts_reading_v3', JSON.stringify(history));
         document.getElementById('exam-overlay').style.display = 'flex';
         document.getElementById('timer').classList.remove('time-up');
-        if(timed) startClock(3600); else document.getElementById('timer').innerText = "练习模式";
+        
+        if(timed) {
+            startClock(3600); // 60分钟
+        } else {
+            clearInterval(clock);
+            document.getElementById('timer').innerText = "练习模式";
+            document.getElementById('pauseBtn').style.display = 'none'; // 练习模式隐藏暂停按钮
+        }
         updateUI();
     }
 
+    // 5. 计时器与暂停控制
     function startClock(sec) {
-        let left = sec; clearInterval(clock);
+        timeLeft = sec;
+        isPaused = false;
+        
+        // 初始化暂停按钮
+        const pauseBtn = document.getElementById('pauseBtn');
+        pauseBtn.style.display = 'block';
+        pauseBtn.innerText = '⏸ 暂停';
+        pauseBtn.classList.remove('paused');
+
+        clearInterval(clock);
+        updateTimerDisplay(); // 马上显示时间，不等待1秒
+
         clock = setInterval(() => {
-            left--;
-            let m = Math.floor(left/60).toString().padStart(2,'0');
-            let s = (left%60).toString().padStart(2,'0');
-            document.getElementById('timer').innerText = `${m}:${s}`;
-            
-            if(left <= 0) { 
-                clearInterval(clock); 
-                document.getElementById('timer').innerText = "00:00 - TIME UP";
-                document.getElementById('timer').classList.add('time-up');
-                alert("时间到！计时器已停止，你可以继续对答案或分析错题。点击‘退出考试’返回主页。");
-                // ✨ 关键修复：这里不再执行退出逻辑，只是停止计时。
+            if(!isPaused) {
+                timeLeft--;
+                updateTimerDisplay();
+                
+                if(timeLeft <= 0) { 
+                    clearInterval(clock); 
+                    document.getElementById('timer').innerText = "00:00 - TIME UP";
+                    document.getElementById('timer').classList.add('time-up');
+                    document.getElementById('pauseBtn').style.display = 'none'; // 时间到隐藏暂停按钮
+                    alert("时间到！计时器已停止，你可以继续对答案或分析错题。点击‘退出考试’返回主页。");
+                }
             }
         }, 1000);
+    }
+
+    // 更新时间DOM
+    function updateTimerDisplay() {
+        let m = Math.floor(timeLeft / 60).toString().padStart(2, '0');
+        let s = (timeLeft % 60).toString().padStart(2, '0');
+        document.getElementById('timer').innerText = `${m}:${s}`;
+    }
+
+    // 暂停/继续切换功能
+    function togglePause() {
+        isPaused = !isPaused;
+        const btn = document.getElementById('pauseBtn');
+        if (isPaused) {
+            btn.innerText = '▶ 继续';
+            btn.classList.add('paused');
+        } else {
+            btn.innerText = '⏸ 暂停';
+            btn.classList.remove('paused');
+        }
     }
 
     function quitExam() {
@@ -257,8 +333,9 @@
     }
 
     function clearHistory() {
-        if(confirm("确定清空吗？")) { 
-            localStorage.clear(); 
+        if(confirm("确定清空所有做题记录吗？这无法恢复。")) { 
+            localStorage.removeItem('ielts_reading_v3');
+            localStorage.removeItem('last_session_v3');
             location.reload(); 
         }
     }
